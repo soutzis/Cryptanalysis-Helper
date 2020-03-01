@@ -1,13 +1,40 @@
 import java.util.*;
 import java.util.stream.Collectors;
 
-
+//TODO possibly make application to handle all Unicode characters instead of just ASCII characters;
+// a possibly helpful SO post: https://stackoverflow.com/questions/5585919/creating-unicode-character-from-its-number
 public class PolyAlphStreamCipherAPI {
+
+    static String handleDecryptionLineFeed(String decryptedText){
+        String processed;
+        int platformLineFeedIndex;
+        if (decryptedText.contains("\r\n")) {
+            platformLineFeedIndex = decryptedText.lastIndexOf("\r\n");
+            processed = decryptedText.substring(0,platformLineFeedIndex);
+        }
+        else if (decryptedText.contains("\r_")) {
+            platformLineFeedIndex = decryptedText.lastIndexOf("\r_");
+            processed = decryptedText.substring(0,platformLineFeedIndex);
+        }
+        else if (decryptedText.contains("_\n")) {
+            platformLineFeedIndex = decryptedText.lastIndexOf("_\n");
+            processed = decryptedText.substring(0,platformLineFeedIndex);
+        }
+        else if (decryptedText.contains("\r")) {
+            processed = decryptedText.replaceAll("\r","");
+        }
+        else
+            processed = decryptedText;
+
+        return processed;
+    }
 
     static void applyPolyAlphStream(List<String> lines){
         Scanner scanner = new Scanner(System.in);
         ArrayList<String> plaintext = new ArrayList<>();
-        List<String> platformSpecificMsg = null;
+        List<String> platformSpecificMsg;
+        //if only 1 lines, then it means that there is no line feed in text, which means there is no need to generate
+        //platform-specific Strings (so much for a cross-platform language...)
         if(lines.size() == 1) {
             platformSpecificMsg = new ArrayList<>();
             platformSpecificMsg.add(lines.get(0));
@@ -15,14 +42,14 @@ public class PolyAlphStreamCipherAPI {
         else
             platformSpecificMsg = Arrays.asList(
                 String.join(Constants.UNIX_NEWLINE_SEPARATOR, lines),
-                //String.join(Constants.WIN_NEWLINE_SEPARATOR, lines), //fixme produces wrong results (unexpected)
+                String.join(Constants.WIN_NEWLINE_SEPARATOR, lines),
                 String.join(Constants.MAC_NEWLINE_SEPARATOR, lines)
                 );
 
         //Use unix style '\n' as default string
         char firstCipherChar = platformSpecificMsg.get(0).charAt(0);
         //print the capital letters and their decimal value (all hints are decimal)
-        for(int i=64; i<95; i+=16){
+        for(int i = Constants.MIN_UPPER_LETTERS_ROW_VALUE; i<Constants.MAX_UPPER_LETTERS_ROW_VALUE; i+=Constants.SYMBOLS_PER_ROW){
             for(int j=0; j<16; j++){
                 int value = i+j;
                 char symbol = (char)value;
@@ -45,18 +72,27 @@ public class PolyAlphStreamCipherAPI {
         switch (modeSelection){
             case 1:
                 Integer key2 = null;
-                String prompt = "Enter key 2? (Y/N): ";
+                String prompt = "Enter key-2?\n" +
+                        "[Select \"Y/y\" if you want to use key-1 on all characters, or if you want to provide key-2 " +
+                        "to use alternately with key-1]\n(Y/N): ";
                 boolean manuallyEnterKey = UserInterface.getInputYesNo(new Scanner(System.in), prompt);
                 if(manuallyEnterKey){
-                    System.out.println("Please enter the decimal value of the key: ");
+                    System.out.println("Please enter the decimal value of the key\n" +
+                            "[If you want to use only one key, then re-enter key-1 here]\n(Key): ");
                     key2 = scanner.nextInt();//89
+                    System.out.println();
                 }
                 int msgCount = platformSpecificMsg.size();
-                System.out.println("There are "+msgCount+" platform specific strings.");
+                if(msgCount != 1)
+                    System.out.println("There are "+msgCount+" different platform-specific strings.");
+
                 for(int msgIndex=0; msgIndex<msgCount; msgIndex++) {
-                    String res = useKeysOrLeaveK2Blank(platformSpecificMsg.get(msgIndex), plaintext, key1, key2);
-                    System.out.println("The result of String #" + (msgIndex + 1) + " out of " + msgCount + "is: ");
-                    System.out.print(res);
+                    String res = use2KeysOrLeaveK2Blank(platformSpecificMsg.get(msgIndex), key1, key2);
+
+                    if(msgCount != 1)
+                        System.out.println("The result of String #" + (msgIndex + 1) + " (out of " + msgCount + "), is: ");
+
+                    System.out.println(res);
                     //If not final loop, ask user if they want to try next string, or if this is the correct one.
                     if (msgIndex != msgCount - 1) {
                         if (!UserInterface.getInputYesNo(new Scanner(System.in), "Try next String? (Y/N): ")) {
@@ -76,37 +112,40 @@ public class PolyAlphStreamCipherAPI {
                 break;
         }
 
+        System.out.println("\nPRINTING RESULTS:");
         UserInterface.printListElements(plaintext);
         UserInterface.askToWriteResultToFile(plaintext);
     }
 
-    static String useKeysOrLeaveK2Blank(String message, List<String> plaintext, byte key1, Integer key2){
-            byte[] cipherBytes = message.getBytes();
-            char[] charArr = new char[message.length()];
-            for (int i = 0; i < message.length(); i++) {
-                if (i % 2 == 0) {
-                    charArr[i] = (char)(cipherBytes[i] ^ key1);
-                }
-                else{
-                    if(key2 != null)
-                        charArr[i] = (char)(cipherBytes[i] ^ key2);
-                    else
-                        charArr[i] = '_';
-                }
+    static String use2KeysOrLeaveK2Blank(String message, byte key1, Integer key2){
+        //This is the problem with platform specific chars. Also, a java byte primitive
+        // can only hold numbers from -128 to 127
+        byte[] cipherBytes = message.getBytes();
+        char[] charArr = new char[message.length()];
+        for (int i = 0; i < message.length(); i++) {
+            if (i % 2 == 0) {
+                charArr[i] = (char)(cipherBytes[i] ^ key1);
             }
-
+            else{
+                if(key2 != null)
+                    charArr[i] = (char)(cipherBytes[i] ^ key2);
+                else
+                    charArr[i] = '_';
+            }
+        }
+        String res = handleDecryptionLineFeed(new String(charArr));
         return "Output (Key 1="+key1+", Key 2="+key2+")\n"+Constants.LINE+"\n"+
-                new String(charArr)+"\n"+Constants.LINE+"\n\n";
+                res+"\n"+Constants.LINE+"\n\n";
 
     }
 
     static void bruteForceKey2(List<String> platformSpecificMsg, List<String> plaintext, byte key1){
         int msgCount = platformSpecificMsg.size();
         System.out.println("There are "+msgCount+" platform specific strings.");
-        for(int z=1; z<Constants.MAX_ASCII_VALUE; z++){
-            StringBuilder sb = new StringBuilder();
-            sb.append("Output (Key 1=").append(key1).append(", Key 2=").append(z)
-                    .append(")\n").append(Constants.LINE).append("\n");
+        for(int key2 = 1; key2<Constants.MAX_SYMBOL_VALUE; key2++){
+            StringBuilder sb = new StringBuilder(
+                    "Output (Key 1=" + key1 + ", Key 2=" + key2 + ")\n" + Constants.LINE + "\n"
+            );
             for (String message : platformSpecificMsg) {
                 byte[] cipherBytes = message.getBytes();
                 char[] charArr = new char[message.length()];
@@ -114,9 +153,10 @@ public class PolyAlphStreamCipherAPI {
                     if (i % 2 == 0) {
                         charArr[i] = (char) (cipherBytes[i] ^ key1);
                     } else {
-                        charArr[i] = (char) (cipherBytes[i] ^ z);
+                        charArr[i] = (char) (cipherBytes[i] ^ key2);
                     }
                 }
+
                 if (message.contains(Constants.WIN_NEWLINE_SEPARATOR))
                     sb.append("CRLF Encoded: ");
                 else if (message.contains(Constants.MAC_NEWLINE_SEPARATOR))
@@ -124,12 +164,12 @@ public class PolyAlphStreamCipherAPI {
                 else if (message.contains(Constants.UNIX_NEWLINE_SEPARATOR))
                     sb.append("LF Encoded: ");
 
-                sb.append(new String(charArr)).append("\n");
+                String res = handleDecryptionLineFeed(new String(charArr));
+                sb.append(res).append("\n");
             }
-            sb.append("\n"+Constants.LINE+"\n\n");
-            String res = sb.toString();
-            plaintext.add(res);
-            System.out.println(res);
+            sb.append(Constants.LINE + "\n\n");
+            plaintext.add(sb.toString());
+            System.out.println(sb);
         }
     }
 
@@ -145,7 +185,7 @@ public class PolyAlphStreamCipherAPI {
         for (String message : platformSpecificMsg) {
             temporaryContainer.clear();
             fitnessScores.clear();
-            for (int key2 = 1; key2 < Constants.MAX_ASCII_VALUE; key2++) {
+            for (int key2 = 1; key2 < Constants.MAX_SYMBOL_VALUE; key2++) {
                 byte[] cipherBytes = message.getBytes();
                 char[] charArr = new char[message.length()];
                 for (int i = 0; i < message.length(); i++) {
@@ -185,6 +225,7 @@ public class PolyAlphStreamCipherAPI {
         //check if threshold reached
         if(fitness >= fitnessThreshold){
             System.out.println("Key="+key2+" found!");
+            message = handleDecryptionLineFeed(message);
             String res = "Output (Key 1="+key1+", Key 2="+key2+")\n"+Constants.LINE+"\n"+
                     message+"\n"+Constants.LINE+"\n\n";
             plaintextContainer.add(res);

@@ -27,7 +27,10 @@ class Constants {
     final static int FREQUENCY_ANALYSIS = 4;
 
     //Stream Cipher Constants
-    final static int MAX_ASCII_VALUE = 128;
+    final static int MAX_SYMBOL_VALUE = 128; //currently only supports ascii (128 out of 917503)
+    final static int SYMBOLS_PER_ROW = 16; //from 0 to F (hexadecimal)
+    final static int MIN_UPPER_LETTERS_ROW_VALUE = 64;
+    final static int MAX_UPPER_LETTERS_ROW_VALUE = 95;
 
     //Columnar Transposition Constants
     final static int MAX_KEY_LENGTH_COL_TRANS = 10;
