@@ -13,8 +13,8 @@ public class Driver {
             case Constants.COLUMN_TRANSPOSITION_CIPHER:
                 ColumnTransAPI.applyColumnTrans(input);
                 break;
-            case Constants.STREAM_CIPHER:
-                PolyAlphStreamCipherAPI.applyPolyAlphStream(input);
+            case Constants.ECBS_CIPHER:
+                EcbsAPI.applyECBS(input);
                 break;
             case Constants.FREQUENCY_ANALYSIS:
                 FreqAnalysisAPI.freqAnalysis(input);

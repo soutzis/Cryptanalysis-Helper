@@ -1,3 +1,5 @@
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -108,43 +110,55 @@ public class ColumnTransAPI {
         return sb.toString();
     }
 
-    //TODO MAKE PROCESS MULTI-THREADED, AT 7! PERMUTATIONS -> TOO SLOW
+    //TODO MAKE PROCESS MULTI-THREADED, AT 8! PERMUTATIONS -> TOO SLOW
     static void applyColumnTrans(List<String> input){
-        HashSet<String> dictionary = SpellChecking.loadDictionary();
+        Instant start = Instant.now();// get current timestamp to measure execution time
+        input.replaceAll(String::toLowerCase);
+        HashSet<String> dictionary = SpellChecker.loadDictionary();
         String cipher = String.join(Constants.EMPTY_STRING, input); //convert all lines of text into single string
         int cipherLength = cipher.length();
         List<Integer> keyLengths = getDivisorsList(cipherLength);
         keyLengths.removeIf(i -> i > Constants.MAX_KEY_LENGTH_COL_TRANS); //only keys up to length 10
         HashMap<String, String> anagrams = new HashMap<>();
         LinkedHashMap<String, Integer> fitnessScores = new LinkedHashMap<>();
+        //int fitnessThreshold = cipherLength/Constants.AVG_WORD_LENGTH;
         String output = null;
 
-        for(Integer keyLength : keyLengths){
-            int columnLength = cipherLength/keyLength; //should never have remainder. if there is, then it is a bug.
+        for(Integer keyLength : keyLengths) {
+            int columnLength = cipherLength / keyLength; //should never have remainder. if there is, then it is a bug.
             String anagram = rearrangeCipher(cipher, columnLength, keyLength);
             String startPermutationsMessage = "Now applying possible permutations for the following anagram:\n" +
                     "[[[PLEASE WAIT FOR PROCESS TO FINISH]]]\n" +
-                    "{KEY SIZE: "+keyLength+", POSSIBLE PERMUTATIONS: "+factorial(keyLength)+"}\n"+
-                    Constants.LINE+"\n"+anagram+"\n"+Constants.LINE+"\n";
+                    "{KEY LENGTH: " + keyLength + ", POSSIBLE PERMUTATIONS: " + factorial(keyLength) + "}\n" +
+                    Constants.LINE + "\n" + anagram + "\n" + Constants.LINE + "\n";
             System.out.println(startPermutationsMessage);
             //If user says yes, start applying permutations. If user says no, continue loop
             //Start applying all possible keys, one by one
-            String singleRow = anagram.substring(0,keyLength);  //get first row of cipher
+            String singleRow = anagram.substring(0, keyLength);  //get first row of cipher
             String rowAsIndices = getWordIndices(singleRow);    //convert each char to an index indicator e.g."0123"
             List<String> keys = getKeyPermutations(rowAsIndices); //get all permutations possible (a.k.a all keys)
 
+//            int allTimeHighestFitness = 0, loopHighestFitness = 0;
+
             //skip first key, because it is the same as the anagram shown to user before.
-            for(int i=1; i<keys.size(); i++){
+            for (int i = 1; i < keys.size(); i++) {
                 String[] anagramFragments = convertToNGrams(anagram, keyLength);
                 String key = keys.get(i);
 
                 String result = applyKeyToFragments(anagramFragments, key);
+                int fitness = SpellChecker.getCharByCharFitness(result, dictionary);
                 anagrams.put(key, result);
-                fitnessScores.put(key, SpellChecking.getCharByCharFitness(result, dictionary));
+                fitnessScores.put(key, fitness);
+//                if(fitness > loopHighestFitness)
+//                    loopHighestFitness = fitness;
                 //System.out.println(result+", {KEY = "+key+"}");
-                //TODO make a menu to inspect each anagram through a hashmap, quit, write to file, etc
             }
-            //System.out.println();
+//            if(loopHighestFitness > allTimeHighestFitness)
+//                allTimeHighestFitness = loopHighestFitness;
+//            else if(loopHighestFitness < allTimeHighestFitness) {
+//                System.out.println("Possible key length detected: "+keyLength+"\nAttempting to find key...");
+//                break;
+//            }
         }
         //sort scores descending. e.g. 10, 9, 8 ...
         fitnessScores = fitnessScores.entrySet().stream()
@@ -153,9 +167,13 @@ public class ColumnTransAPI {
                         (oldValue, newValue) -> oldValue, LinkedHashMap::new));
 
         //get best score
+        Instant finish = Instant.now();
+        long minutesElapsed = Duration.between(start, finish).toMinutes();  //in millis
+        long secondsElapsed = Duration.between(start, finish).getSeconds() % 60; //For 61 seconds, result is 1
         Map.Entry<String, Integer> bestScore = fitnessScores.entrySet().iterator().next();
         String key = bestScore.getKey();
         System.out.println("Possible Key Found->"+key);
         System.out.println(Constants.LINE+"\n"+anagrams.get(key)+"\n"+Constants.LINE+"\n");
+        System.out.println("{Total execution time was: "+minutesElapsed+" minutes and "+secondsElapsed+" seconds}");
     }
 }

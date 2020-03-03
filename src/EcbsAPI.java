@@ -3,7 +3,9 @@ import java.util.stream.Collectors;
 
 //TODO possibly make application to handle all Unicode characters instead of just ASCII characters;
 // a possibly helpful SO post: https://stackoverflow.com/questions/5585919/creating-unicode-character-from-its-number
-public class PolyAlphStreamCipherAPI {
+
+//ECBS stands for Electronic Code Book Special
+public class EcbsAPI {
 
     static String handleDecryptionLineFeed(String decryptedText){
         String processed;
@@ -29,7 +31,7 @@ public class PolyAlphStreamCipherAPI {
         return processed;
     }
 
-    static void applyPolyAlphStream(List<String> lines){
+    static void applyECBS(List<String> lines){
         Scanner scanner = new Scanner(System.in);
         ArrayList<String> plaintext = new ArrayList<>();
         List<String> platformSpecificMsg;
@@ -122,7 +124,9 @@ public class PolyAlphStreamCipherAPI {
         // can only hold numbers from -128 to 127
         byte[] cipherBytes = message.getBytes();
         char[] charArr = new char[message.length()];
+        List<Integer> hexValues = new ArrayList<>();/*TEST*/
         for (int i = 0; i < message.length(); i++) {
+            hexValues.add((int)cipherBytes[i]);/*TEST*/
             if (i % 2 == 0) {
                 charArr[i] = (char)(cipherBytes[i] ^ key1);
             }
@@ -133,6 +137,9 @@ public class PolyAlphStreamCipherAPI {
                     charArr[i] = '_';
             }
         }
+        hexValues.sort(Collections.reverseOrder());/*TEST*/
+        hexValues = hexValues.stream().distinct().collect(Collectors.toList()); /*TEST*/
+        System.out.println(hexValues);/*TEST*/
         String res = handleDecryptionLineFeed(new String(charArr));
         return "Output (Key 1="+key1+", Key 2="+key2+")\n"+Constants.LINE+"\n"+
                 res+"\n"+Constants.LINE+"\n\n";
@@ -175,7 +182,7 @@ public class PolyAlphStreamCipherAPI {
 
 
     static void autoFindKey2(List<String> platformSpecificMsg, List<String> plaintextContainer, byte key1){
-        HashSet<String> dictionary = SpellChecking.loadDictionary();
+        HashSet<String> dictionary = SpellChecker.loadDictionary();
         //Key = Key 2 (value of z in loop) Value = fitness score of message using specified key 2
         LinkedHashMap<Integer, Integer> fitnessScores = new LinkedHashMap<>();
         HashMap<String, Map.Entry<Integer, Integer>>finalistMessages = new HashMap<>();
@@ -196,7 +203,7 @@ public class PolyAlphStreamCipherAPI {
                     }
                 }
                 String possiblePlaintext = new String(charArr);
-                fitnessScores.put(key2, SpellChecking.getStringFitness(possiblePlaintext, dictionary));
+                fitnessScores.put(key2, SpellChecker.getStringFitness(possiblePlaintext, dictionary));
                 temporaryContainer.put(key2, possiblePlaintext);
             }
             //sort scores descending. e.g. 10, 9, 8 ...

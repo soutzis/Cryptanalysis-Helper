@@ -7,9 +7,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-//TODO
+public class SpellChecker {
 
-public class SpellChecking {
+    //When using the method "getCharByCharFitness", checking for words of length 1,2,3 will produce high fitness
+    //for strings that are obviously incorrect. Thus, by setting a 'minimum' of chars, more meaningful results are
+    //generated.
+    private static final int MIN_WORD_LEN = 3;
 
     static HashSet<String> loadDictionary (){
         HashSet<String> dictionary = null;
@@ -80,11 +83,11 @@ public class SpellChecking {
         return processedString.toArray(result);
     }
 
-    //checks string recursively, due to absence of white-spaces
+    //checks substring-by-substring, due to absence of white-spaces
     static int getCharByCharFitness(String input, HashSet<String> dictionary){
         input = input.toLowerCase();
         int fitness = 0, leftPointer = 0, strLen = input.length();
-        int lengthToCheck = 3;
+        int lengthToCheck = MIN_WORD_LEN;
         //not actually pointer. difference from leftPointer specifies length of substring
         int rightPointer = lengthToCheck;
         //don't consider words less than 3 chars long, otherwise results are skewed

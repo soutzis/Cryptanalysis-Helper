@@ -14,8 +14,9 @@ public class FreqAnalysisAPI {
         System.out.println("\n\nLetters of the cipher will be in Upper-Case and plaintext letters will be Lower-Case.");
         //Order of list elements is important!
         List<String> commands = new ArrayList<>(Arrays.asList("Print Original Cipher", "Print Current Progress",
-                "Print Substitution Table", "Print Key", "Print Information Table", "Print cipher text information",
-                "Make a letter substitution", "Reset", "Finish (print result and optionally save to file)"));
+                "Print Substitution Table", "Print Key", "Print English language information",
+                "Print cipher text information","Make a letter substitution", "Reset",
+                "Finish (print result and optionally save to file)"));
         String prompt = "Please choose what you want to do.";
         String errMsg = "A valid choice is a number between 1 - "+commands.size();
 
@@ -107,6 +108,8 @@ public class FreqAnalysisAPI {
         //The order is like this because it is intuitive.
         String key = input.split(Constants.SUBS_FORMAT_SEPARATOR)[1]; //plaintext char
         String value = input.split(Constants.SUBS_FORMAT_SEPARATOR)[0]; //cipher text char
+        //FIXME if value already exists, ask user if they want to make that substitution. IF
+        // user say yes, put new mapping, remove value from other mapping.
         substitutionTable.put(key.toLowerCase(), value.toLowerCase());
         cipher.replaceAll(s -> s.replaceAll(value.toUpperCase(), key));
     }
@@ -309,7 +312,7 @@ public class FreqAnalysisAPI {
         for(String letter : alphabet)
             key.append(substitutionTable.getOrDefault(letter, unknownMapping));
 
-        System.out.println(key.toString()+"\n");
+        System.out.println("KEY: "+ key.toString()+"\n");
     }
 
     static String getSubstitutionKey(HashMap<String,String> substitutionTable){
