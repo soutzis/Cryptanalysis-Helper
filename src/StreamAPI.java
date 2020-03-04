@@ -1,11 +1,7 @@
 import java.util.*;
 import java.util.stream.Collectors;
 
-//TODO possibly make application to handle all Unicode characters instead of just ASCII characters;
-// a possibly helpful SO post: https://stackoverflow.com/questions/5585919/creating-unicode-character-from-its-number
-
-//ECBS stands for Electronic Code Book Special
-public class EcbsAPI {
+public class StreamAPI {
 
     static String handleDecryptionLineFeed(String decryptedText){
         String processed;
@@ -31,7 +27,7 @@ public class EcbsAPI {
         return processed;
     }
 
-    static void applyECBS(List<String> lines){
+    static void applySimpleStream(List<String> lines){
         Scanner scanner = new Scanner(System.in);
         ArrayList<String> plaintext = new ArrayList<>();
         List<String> platformSpecificMsg;
@@ -48,8 +44,6 @@ public class EcbsAPI {
                 String.join(Constants.MAC_NEWLINE_SEPARATOR, lines)
                 );
 
-        //Use unix style '\n' as default string
-        char firstCipherChar = platformSpecificMsg.get(0).charAt(0);
         //print the capital letters and their decimal value (all hints are decimal)
         for(int i = Constants.MIN_UPPER_LETTERS_ROW_VALUE; i<Constants.MAX_UPPER_LETTERS_ROW_VALUE; i+=Constants.SYMBOLS_PER_ROW){
             for(int j=0; j<16; j++){
@@ -63,7 +57,9 @@ public class EcbsAPI {
         //char hint = 'L'; //decimal=76
         System.out.print("Please enter the decimal value of the hint (see above table): ");
         int hint = scanner.nextInt(); //get hint from user in order to get key
-        byte key1 = (byte)(firstCipherChar ^ hint);
+        //Use unix style '\n' as default string
+        int firstCPoint = platformSpecificMsg.get(0).codePointAt(0);
+        int key1 = (firstCPoint ^ hint);
 
         //Present choices to user
         List<String> modes = new ArrayList<>(Arrays.asList("Apply key-1 only or manually enter key-2",
@@ -73,14 +69,14 @@ public class EcbsAPI {
 
         switch (modeSelection){
             case 1:
-                Integer key2 = null;
+                int key2 = 0;
                 String prompt = "Enter key-2?\n" +
                         "[Select \"Y/y\" if you want to use key-1 on all characters, or if you want to provide key-2 " +
                         "to use alternately with key-1]\n(Y/N): ";
                 boolean manuallyEnterKey = UserInterface.getInputYesNo(new Scanner(System.in), prompt);
                 if(manuallyEnterKey){
                     System.out.println("Please enter the decimal value of the key\n" +
-                            "[If you want to use only one key, then re-enter key-1 here]\n(Key): ");
+                            "[If you want to use only one key, then enter the value \""+key1+"\"]\n(Key): ");
                     key2 = scanner.nextInt();//89
                     System.out.println();
                 }
@@ -89,15 +85,17 @@ public class EcbsAPI {
                     System.out.println("There are "+msgCount+" different platform-specific strings.");
 
                 for(int msgIndex=0; msgIndex<msgCount; msgIndex++) {
-                    String res = use2KeysOrLeaveK2Blank(platformSpecificMsg.get(msgIndex), key1, key2);
+                    String res = provide1ByteKeys(platformSpecificMsg.get(msgIndex), key1, key2);
 
-                    if(msgCount != 1)
-                        System.out.println("The result of String #" + (msgIndex + 1) + " (out of " + msgCount + "), is: ");
+                    if(msgCount != 1) {
+                        System.out.println("The result of String #" + (msgIndex + 1) +
+                                " (out of " + msgCount + " variants), is: ");
+                        System.out.println(res);
+                    }
 
-                    System.out.println(res);
                     //If not final loop, ask user if they want to try next string, or if this is the correct one.
                     if (msgIndex != msgCount - 1) {
-                        if (!UserInterface.getInputYesNo(new Scanner(System.in), "Try next String? (Y/N): ")) {
+                        if (!UserInterface.getInputYesNo(new Scanner(System.in), "Try next variant? (Y/N): ")) {
                             plaintext.add(res);
                             break;
                         }
@@ -119,49 +117,48 @@ public class EcbsAPI {
         UserInterface.askToWriteResultToFile(plaintext);
     }
 
-    static String use2KeysOrLeaveK2Blank(String message, byte key1, Integer key2){
-        //This is the problem with platform specific chars. Also, a java byte primitive
-        // can only hold numbers from -128 to 127
-        byte[] cipherBytes = message.getBytes();
-        char[] charArr = new char[message.length()];
-        List<Integer> hexValues = new ArrayList<>();/*TEST*/
+    static String provide1ByteKeys(String message, int key1, int key2){
+        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < message.length(); i++) {
-            hexValues.add((int)cipherBytes[i]);/*TEST*/
-            if (i % 2 == 0) {
-                charArr[i] = (char)(cipherBytes[i] ^ key1);
-            }
+            int xor;
+            int cPoint = message.codePointAt(i);
+            if (i % 2 == 0)
+                xor = (cPoint ^ key1);
             else{
-                if(key2 != null)
-                    charArr[i] = (char)(cipherBytes[i] ^ key2);
+                if(key2 != 0)
+                    xor = (cPoint ^ key2);
                 else
-                    charArr[i] = '_';
+                    xor = Constants.UNDERSCORE_CPOINT;// _
             }
+            sb.append(new String(Character.toChars(xor)));
         }
-        hexValues.sort(Collections.reverseOrder());/*TEST*/
-        hexValues = hexValues.stream().distinct().collect(Collectors.toList()); /*TEST*/
-        System.out.println(hexValues);/*TEST*/
-        String res = handleDecryptionLineFeed(new String(charArr));
+
+        String res = handleDecryptionLineFeed(sb.toString());
         return "Output (Key 1="+key1+", Key 2="+key2+")\n"+Constants.LINE+"\n"+
                 res+"\n"+Constants.LINE+"\n\n";
 
     }
 
-    static void bruteForceKey2(List<String> platformSpecificMsg, List<String> plaintext, byte key1){
+    static void bruteForceKey2(List<String> platformSpecificMsg, List<String> plaintext, int key1){
         int msgCount = platformSpecificMsg.size();
         System.out.println("There are "+msgCount+" platform specific strings.");
-        for(int key2 = 1; key2<Constants.MAX_SYMBOL_VALUE; key2++){
-            StringBuilder sb = new StringBuilder(
-                    "Output (Key 1=" + key1 + ", Key 2=" + key2 + ")\n" + Constants.LINE + "\n"
-            );
+
+        for(int hint2 = 1; hint2<Constants.MAX_SYMBOL_VALUE; hint2++){
+            int key2 = -1;
+            StringBuilder sb = new StringBuilder();
+
             for (String message : platformSpecificMsg) {
-                byte[] cipherBytes = message.getBytes();
-                char[] charArr = new char[message.length()];
+                key2 = (message.codePointAt(1) ^ hint2);
+                StringBuilder decryption = new StringBuilder();
+
                 for (int i = 0; i < message.length(); i++) {
-                    if (i % 2 == 0) {
-                        charArr[i] = (char) (cipherBytes[i] ^ key1);
-                    } else {
-                        charArr[i] = (char) (cipherBytes[i] ^ key2);
-                    }
+                    int xor;
+                    int cPoint = message.codePointAt(i);
+                    if (i % 2 == 0)
+                        xor = (cPoint ^ key1);
+                    else
+                        xor = (cPoint ^ key2);
+                    decryption.append(new String(Character.toChars(xor)));
                 }
 
                 if (message.contains(Constants.WIN_NEWLINE_SEPARATOR))
@@ -171,17 +168,18 @@ public class EcbsAPI {
                 else if (message.contains(Constants.UNIX_NEWLINE_SEPARATOR))
                     sb.append("LF Encoded: ");
 
-                String res = handleDecryptionLineFeed(new String(charArr));
+                String res = handleDecryptionLineFeed(decryption.toString());
                 sb.append(res).append("\n");
             }
             sb.append(Constants.LINE + "\n\n");
+            sb.insert(0, "Output (Key 1=" + key1 + ", Key 2=" + key2 + ")\n" + Constants.LINE + "\n");
             plaintext.add(sb.toString());
             System.out.println(sb);
         }
     }
 
 
-    static void autoFindKey2(List<String> platformSpecificMsg, List<String> plaintextContainer, byte key1){
+    static void autoFindKey2(List<String> platformSpecificMsg, List<String> plaintextContainer, int key1){
         HashSet<String> dictionary = SpellChecker.loadDictionary();
         //Key = Key 2 (value of z in loop) Value = fitness score of message using specified key 2
         LinkedHashMap<Integer, Integer> fitnessScores = new LinkedHashMap<>();
@@ -192,17 +190,21 @@ public class EcbsAPI {
         for (String message : platformSpecificMsg) {
             temporaryContainer.clear();
             fitnessScores.clear();
-            for (int key2 = 1; key2 < Constants.MAX_SYMBOL_VALUE; key2++) {
-                byte[] cipherBytes = message.getBytes();
-                char[] charArr = new char[message.length()];
+
+            for(int hint2 = 1; hint2<Constants.MAX_SYMBOL_VALUE; hint2++){
+                int key2 = (message.codePointAt(1) ^ hint2);
+                StringBuilder decryption = new StringBuilder();
+
                 for (int i = 0; i < message.length(); i++) {
-                    if (i % 2 == 0) {
-                        charArr[i] = (char) (cipherBytes[i] ^ key1);
-                    } else {
-                        charArr[i] = (char) (cipherBytes[i] ^ key2);
-                    }
+                    int xor;
+                    int cPoint = message.codePointAt(i);
+                    if (i % 2 == 0)
+                        xor = (cPoint ^ key1);
+                    else
+                        xor = (cPoint ^ key2);
+                    decryption.append(new String(Character.toChars(xor)));
                 }
-                String possiblePlaintext = new String(charArr);
+                String possiblePlaintext = decryption.toString();
                 fitnessScores.put(key2, SpellChecker.getStringFitness(possiblePlaintext, dictionary));
                 temporaryContainer.put(key2, possiblePlaintext);
             }
@@ -231,7 +233,7 @@ public class EcbsAPI {
 
         //check if threshold reached
         if(fitness >= fitnessThreshold){
-            System.out.println("Key="+key2+" found!");
+            System.out.println("\n\nCryptanalysisHelper thinks that: key2="+key2);
             message = handleDecryptionLineFeed(message);
             String res = "Output (Key 1="+key1+", Key 2="+key2+")\n"+Constants.LINE+"\n"+
                     message+"\n"+Constants.LINE+"\n\n";

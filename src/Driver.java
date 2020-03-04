@@ -14,7 +14,7 @@ public class Driver {
                 ColumnTransAPI.applyColumnTrans(input);
                 break;
             case Constants.ECBS_CIPHER:
-                EcbsAPI.applyECBS(input);
+                StreamAPI.applySimpleStream(input);
                 break;
             case Constants.FREQUENCY_ANALYSIS:
                 FreqAnalysisAPI.freqAnalysis(input);
