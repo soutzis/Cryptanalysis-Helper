@@ -1,8 +1,9 @@
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class StreamAPI {
+public class SimpleXorAPI {
 
+    //FIXME the character '_' needs to be any character, so it can be removed.
     static String handleDecryptionLineFeed(String decryptedText){
         String processed;
         int platformLineFeedIndex;
@@ -27,7 +28,7 @@ public class StreamAPI {
         return processed;
     }
 
-    static void applySimpleStream(List<String> lines){
+    static void applySimpleXor(List<String> lines){
         Scanner scanner = new Scanner(System.in);
         ArrayList<String> plaintext = new ArrayList<>();
         List<String> platformSpecificMsg;
@@ -55,9 +56,8 @@ public class StreamAPI {
             System.out.println();
         }
         //char hint = 'L'; //decimal=76
-        System.out.print("Please enter the decimal value of the hint (see above table): ");
+        System.out.print("Please enter the decimal value of the first plaintext character (see above table): ");
         int hint = scanner.nextInt(); //get hint from user in order to get key
-        //Use unix style '\n' as default string
         int firstCPoint = platformSpecificMsg.get(0).codePointAt(0);
         int key1 = (firstCPoint ^ hint);
 
@@ -181,7 +181,6 @@ public class StreamAPI {
 
     static void autoFindKey2(List<String> platformSpecificMsg, List<String> plaintextContainer, int key1){
         HashSet<String> dictionary = SpellChecker.loadDictionary();
-        //Key = Key 2 (value of z in loop) Value = fitness score of message using specified key 2
         LinkedHashMap<Integer, Integer> fitnessScores = new LinkedHashMap<>();
         HashMap<String, Map.Entry<Integer, Integer>>finalistMessages = new HashMap<>();
         HashMap<Integer, String> temporaryContainer = new HashMap<>();//holds key2 as key and decrypted message as value

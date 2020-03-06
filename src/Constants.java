@@ -5,7 +5,7 @@ class Constants {
     //final static String DIRECTORY = "static-data/spellcheckerDirectory";
     final static String ALPHABET = "abcdefghijklmnopqrstuvwxyz";
     final static String LINE = "-------------------------------------------------------------------------------";
-    final static String OUTPUT_FILENAME = "output.txt";
+    final static String OUTPUT_FILENAME = "CryptanalysisHelper_output.txt";
     final static String EMPTY_STRING = "";
     final static String COMMA_SEPARATOR = ",";
     final static String SPACE_SEPARATOR = " ";
@@ -21,7 +21,7 @@ class Constants {
 
     //Available Tools Constants. The order of tools is important and unfortunately hardcoded below.
     final static String TOOLS_AVAILABLE = "Caesar Cipher," +//Must be separated with comas, in correct order.
-            "Columnar Transposition Cipher,Simple Stream Cipher,Frequency Analysis";
+            "Columnar Transposition Cipher,Simple XOR Cipher,Frequency Analysis";
     final static int CAESAR_CIPHER = 1;
     final static int COLUMN_TRANSPOSITION_CIPHER = 2;
     final static int ECBS_CIPHER = 3;
@@ -30,8 +30,8 @@ class Constants {
     //Stream Cipher Constants
     final static int MAX_SYMBOL_VALUE = 127; //currently only supports ascii (128 out of 917503)
     final static int SYMBOLS_PER_ROW = 16; //from 0 to F (hexadecimal)
-    final static int MIN_UPPER_LETTERS_ROW_VALUE = 64;
-    final static int MAX_UPPER_LETTERS_ROW_VALUE = 95;
+    final static int MIN_UPPER_LETTERS_ROW_VALUE = 48;
+    final static int MAX_UPPER_LETTERS_ROW_VALUE = 126;
 
     //Columnar Transposition Constants
     final static int MAX_KEY_LENGTH_COL_TRANS = 10;

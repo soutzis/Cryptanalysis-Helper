@@ -20,8 +20,8 @@ public class ColumnTransAPI {
      * @param str The String to get all permutations of
      * @param permutations The list to add all permutations to
      */
-    private static void getPermutations(String str, List<String> permutations) {
-        getPermutations(Constants.EMPTY_STRING, str, permutations);
+    private static void getStringPermutations(String str, List<String> permutations) {
+        getStringPermutations(Constants.EMPTY_STRING, str, permutations);
     }
 
     /**
@@ -31,7 +31,7 @@ public class ColumnTransAPI {
      * @param str The substring that will determine if a permutation has been formed (via its length)
      * @param permutationList The list that all possible permutations will be added to.
      */
-    private static void getPermutations(String permutation, String str, List<String> permutationList) {
+    private static void getStringPermutations(String permutation, String str, List<String> permutationList) {
 
         //Get length of 'str' (which is a substring of the originally parsed string)
         int n = str.length();
@@ -40,7 +40,7 @@ public class ColumnTransAPI {
             permutationList.add(permutation);
         else {
             for (int i = 0; i < n; i++) {
-                getPermutations(
+                getStringPermutations(
                         permutation + str.charAt(i),
                         str.substring(0, i) + str.substring(i + 1, n),
                         permutationList);
@@ -50,15 +50,15 @@ public class ColumnTransAPI {
 
     private static List<String> getKeyPermutations(String str){
         List<String> permutationList = new ArrayList<>();
-        getPermutations(str, permutationList);
+        getStringPermutations(str, permutationList);
 
         return permutationList;
     }
 
-    private static String getWordIndices(String word){
+    private static String getWordIndices(int len){
         StringBuilder sb = new StringBuilder();
 
-        for(int i=0; i<word.length(); i++){
+        for(int i=0; i<len; i++){
             sb.append(i);
         }
 
@@ -134,8 +134,7 @@ public class ColumnTransAPI {
             System.out.println(startPermutationsMessage);
             //If user says yes, start applying permutations. If user says no, continue loop
             //Start applying all possible keys, one by one
-            String singleRow = anagram.substring(0, keyLength);  //get first row of cipher
-            String rowAsIndices = getWordIndices(singleRow);    //convert each char to an index indicator e.g."0123"
+            String rowAsIndices = getWordIndices(keyLength); //get string where each char is an index e.g."0123"
             List<String> keys = getKeyPermutations(rowAsIndices); //get all permutations possible (a.k.a all keys)
 
 //            int allTimeHighestFitness = 0, loopHighestFitness = 0;
