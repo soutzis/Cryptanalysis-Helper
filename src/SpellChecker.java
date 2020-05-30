@@ -9,9 +9,6 @@ import java.util.stream.Stream;
 
 public class SpellChecker {
 
-    //When using the method "getCharByCharFitness", checking for words of length 1,2,3 will produce high fitness
-    //for strings that are obviously incorrect. Thus, by setting a 'minimum' of chars, more meaningful results are
-    //generated.
     private static final int MIN_WORD_LEN = 3;
 
     static HashSet<String> loadDictionary (){

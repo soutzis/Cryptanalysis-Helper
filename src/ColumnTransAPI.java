@@ -113,7 +113,6 @@ public class ColumnTransAPI {
     //TODO MAKE PROCESS MULTI-THREADED, AT 8! PERMUTATIONS -> TOO SLOW
     static void applyColumnTrans(List<String> input){
         Instant start = Instant.now();// get current timestamp to measure execution time
-        input.replaceAll(String::toLowerCase);
         HashSet<String> dictionary = SpellChecker.loadDictionary();
         String cipher = String.join(Constants.EMPTY_STRING, input); //convert all lines of text into single string
         int cipherLength = cipher.length();

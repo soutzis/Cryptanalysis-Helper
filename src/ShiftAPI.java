@@ -1,10 +1,10 @@
 import java.util.*;
 
-public class CaesarAPI {
+public class ShiftAPI {
     private static final List<String> alphabetCharList = Constants.getAlphabetCharList();
     private static final Map<String, Integer> inverseCharList = Constants.getInverseCharList();
 
-    static void caesar(List<String> input){
+    static void applyShiftCipher(List<String> input){
         final String useAutoKey = "Would you like to automatically try all possible keys? (Y/N): ";
         final String askToWriteToFile = "Would you like to write the output to a file? (Y/N): ";
         int mode = UserInterface.askMode();

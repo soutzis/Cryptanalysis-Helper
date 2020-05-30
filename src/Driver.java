@@ -4,16 +4,16 @@ public class Driver {
 
     public static void main(String[] args){
         int tool = UserInterface.askTool();
-        List<String> input = UserInterface.askForInput();;
+        List<String> input = UserInterface.askForInput();
 
         switch (tool){
-            case Constants.CAESAR_CIPHER:
-                CaesarAPI.caesar(input);
+            case Constants.SHIFT_CIPHER:
+                ShiftAPI.applyShiftCipher(input);
                 break;
             case Constants.COLUMN_TRANSPOSITION_CIPHER:
                 ColumnTransAPI.applyColumnTrans(input);
                 break;
-            case Constants.ECBS_CIPHER:
+            case Constants.XOR_CIPHER:
                 SimpleXorAPI.applySimpleXor(input);
                 break;
             case Constants.FREQUENCY_ANALYSIS:
